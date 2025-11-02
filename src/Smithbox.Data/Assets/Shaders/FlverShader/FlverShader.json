@@ -76,7 +76,7 @@
 		"Targets": [],
 		"Macros": [
 			{ "Name": "MATERIAL_BLEND" },
-			{ "Name": "MATERIAL_BLEND_MASK"}
+			{ "Name": "MATERIAL_BLEND_MASK" }
 		]
 	},
 	{
@@ -94,7 +94,35 @@
 		"Targets": [],
 		"Macros": [
 			{ "Name": "MATERIAL_BLEND" },
-			{ "Name": "MATERIAL_BLEND_MASK"}
+			{ "Name": "MATERIAL_BLEND_MASK" }
 		]
+	},
+	{
+		"Name": "FlverShader_SpeedTreeTrunk",
+		"Shaders": [
+			{
+				"Stage": "1",
+				"FileName": "FlverShader_SpeedTreeTrunk.vert"
+			},
+			{
+				"Stage": "16",
+				"FileName": "FlverShader.frag"
+			}
+		],
+		"Targets": []
+	},
+	{
+		"Name": "FlverShader_SpeedTreeTrunk_selected",
+		"Shaders": [
+			{
+				"Stage": "1",
+				"FileName": "FlverShader_SpeedTreeTrunk_selected.vert"
+			},
+			{
+				"Stage": "16",
+				"FileName": "FlverShader_selected.frag"
+			}
+		],
+		"Targets": []
 	}
 ]

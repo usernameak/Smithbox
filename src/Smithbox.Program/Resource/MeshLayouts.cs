@@ -18,7 +18,8 @@ public enum MeshLayoutType
     LayoutCollision,
     LayoutNavmesh,
     LayoutPositionColorNormal,
-    LayoutPositionColor
+    LayoutPositionColor,
+    LayoutSpeedTreeTrunk
 }
 
 public static class MeshLayoutUtils
@@ -45,6 +46,8 @@ public static class MeshLayoutUtils
                 return NavmeshLayout.Layout;
             case MeshLayoutType.LayoutPositionColorNormal:
                 return VertexPositionColorNormal.Layout;
+            case MeshLayoutType.LayoutSpeedTreeTrunk:
+                return FlverLayoutSpeedTreeTrunk.Layout;
             default:
                 throw new ArgumentException("Invalid layout type");
         }
@@ -74,6 +77,8 @@ public static class MeshLayoutUtils
                 return (uint)sizeof(VertexPositionColorNormal);
             case MeshLayoutType.LayoutPositionColor:
                 return (uint)sizeof(PositionColor);
+            case MeshLayoutType.LayoutSpeedTreeTrunk:
+                return (uint)sizeof(FlverLayoutSpeedTreeTrunk);
             default:
                 throw new ArgumentException("Invalid layout type");
         }
@@ -193,6 +198,24 @@ public unsafe struct FlverLayoutUV4
         new VertexElementDescription("uv3", VkFormat.R16G16Sint),
         new VertexElementDescription("uv4", VkFormat.R16G16Sint));
 }
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public unsafe struct FlverLayoutSpeedTreeTrunk
+{
+    public Vector3 Position;
+    public fixed short Uv1[2];
+    public fixed sbyte Normal[4];
+    public fixed sbyte Binormal[4];
+    public fixed sbyte Bitangent[4];
+
+    public static VertexLayoutDescription Layout = new(
+        new VertexElementDescription("position", VkFormat.R32G32B32Sfloat),
+        new VertexElementDescription("uv1", VkFormat.R16G16Sint),
+        new VertexElementDescription("normal", VkFormat.R8G8B8A8Sint),
+        new VertexElementDescription("binormal", VkFormat.R8G8B8A8Sint),
+        new VertexElementDescription("bitangent", VkFormat.R8G8B8A8Sint));
+}
+
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct CollisionLayout

@@ -803,6 +803,64 @@ namespace SoulsFormats
         }
         #endregion
 
+        #region Half
+        /// <summary>
+        /// Reads a two-byte floating point number.
+        /// </summary>
+        public unsafe Half ReadHalf()
+        {
+            if (BigEndian)
+            {
+                var i = Read<uint>();
+                return BinaryPrimitives.ReadHalfBigEndian(new ReadOnlySpan<byte>((byte*)&i, 2));
+            }
+            return Read<Half>();
+        }
+
+        /// <summary>
+        /// Reads an array of four-byte floating point numbers.
+        /// </summary>
+        public Half[] ReadHalfs(int count)
+        {
+            var result = new Half[count];
+            for (int i = 0; i < count; i++)
+                result[i] = ReadHalf();
+            return result;
+        }
+
+        /// <summary>
+        /// Reads a four-byte floating point number from the specified position without advancing the stream.
+        /// </summary>
+        public Half GetHalf(long offset)
+        {
+            return GetValue(ReadHalf, offset);
+        }
+
+        /// <summary>
+        /// Reads an array of four-byte floating point numbers from the specified position without advancing the stream.
+        /// </summary>
+        public Half[] GetHalfs(long offset, int count)
+        {
+            return GetValues(ReadHalfs, offset, count);
+        }
+
+        /// <summary>
+        /// Reads a four-byte floating point number and throws an exception if it does not match any of the specified options.
+        /// </summary>
+        public Half AssertHalf(Half option)
+        {
+            return AssertValue(ReadHalf(), "Half", "{0}", option);
+        }
+
+        /// <summary>
+        /// Reads a four-byte floating point number and throws an exception if it does not match any of the specified options.
+        /// </summary>
+        public Half AssertHalf(ReadOnlySpan<Half> options)
+        {
+            return AssertValue(ReadHalf(), "Half", "{0}", options);
+        }
+        #endregion
+
         #region Single
         /// <summary>
         /// Reads a four-byte floating point number.

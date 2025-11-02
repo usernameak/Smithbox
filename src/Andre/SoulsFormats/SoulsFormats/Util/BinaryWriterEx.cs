@@ -601,6 +601,46 @@ namespace SoulsFormats
         }
         #endregion
 
+        #region Half
+        /// <summary>
+        /// Writes a two-byte floating point number.
+        /// </summary>
+        public void WriteHalf(Half value)
+        {
+            if (BigEndian)
+                WriteReversedBytes(BitConverter.GetBytes(value));
+            else
+                bw.Write(value);
+        }
+
+        /// <summary>
+        /// Writes an array of two-byte floating point numbers.
+        /// </summary>
+        public void WriteHalfs(IList<Half> values)
+        {
+            foreach (Half value in values)
+                WriteHalf(value);
+        }
+
+        /// <summary>
+        /// Reserves the current position and advances the stream by two bytes.
+        /// </summary>
+        public void ReserveHalf(string name)
+        {
+            Reserve(name, "Half", 2);
+        }
+
+        /// <summary>
+        /// Writes a two-byte floating point number to a reserved position.
+        /// </summary>
+        public void FillHalf(string name, Half value)
+        {
+            StepIn(Fill(name, "Half"));
+            WriteHalf(value);
+            StepOut();
+        }
+        #endregion
+
         #region Single
         /// <summary>
         /// Writes a four-byte floating point number.

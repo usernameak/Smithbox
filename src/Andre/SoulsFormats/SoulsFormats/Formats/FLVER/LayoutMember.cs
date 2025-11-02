@@ -60,7 +60,7 @@ namespace SoulsFormats
                         case LayoutType.UVPair:
                         case LayoutType.ShortBoneIndices:
                         case LayoutType.Short4toFloat4A:
-                        case LayoutType.Short4toFloat4B:
+                        case LayoutType.Half4:
                             return 8;
 
                         case LayoutType.Float3:
@@ -199,9 +199,9 @@ namespace SoulsFormats
             Short2ToFloat2B = 0x2D,
 
             /// <summary>
-            /// Unknown.
+            /// Four 16-bit floats.
             /// </summary>
-            Short4toFloat4B = 0x2E,
+            Half4 = 0x2E,
 
             /// <summary>
             /// Unknown.

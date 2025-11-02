@@ -49,38 +49,6 @@ public static class RenderableHelper
 
     public static DbgPrimSolidSphere _placementOrb;
 
-    public static readonly HashSet<string> SpeedTree_Bushes = new()
-    {
-        "AEG801_006",
-        "AEG801_086",
-    };
-
-    public enum SpeedTreeType
-    {
-        None,
-        Bush,
-        Tree
-    }
-    /// <summary>
-    /// Returns true if the passed mesh provider is a Speed Tree asset
-    /// </summary>
-    public static SpeedTreeType IsSpeedTreeAsset(MeshProvider _meshProvider)
-    {
-        if (_meshProvider is FlverMeshProvider fProvider)
-        {
-            if (fProvider.IsSpeedtree)
-            {
-                if (SpeedTree_Bushes.Contains(fProvider.MeshName.ToUpper()))
-                {
-                    return SpeedTreeType.Bush;
-                }
-                return SpeedTreeType.Tree;
-            }
-        }
-
-        return SpeedTreeType.None;
-    }
-
     /// <summary>
     /// These are initialized explicitly to ensure these meshes are created at startup time so that they don't share
     /// vertex buffer memory with dynamically allocated resources and cause the megabuffers to not be freed.

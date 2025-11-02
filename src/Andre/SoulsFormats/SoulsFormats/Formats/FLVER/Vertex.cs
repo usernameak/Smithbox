@@ -255,10 +255,13 @@ namespace SoulsFormats
                             Normal = ReadShortNormXYZ(br);
                             NormalW = br.ReadInt16();
                         }
-                        else if (member.Type == LayoutType.Short4toFloat4B)
+                        else if (member.Type == LayoutType.Half4)
                         {
-                            Normal = ReadUShortNormXYZ(br);
-                            NormalW = br.ReadInt16();
+                            Normal = ReadFloat16NormXYZ(br);
+                            float w = (float)br.ReadHalf();
+                            NormalW = (int)w;
+                            if (w != NormalW)
+                                throw new InvalidDataException($"Float4 Normal W was not a whole number: {w}");
                         }
                         else if (member.Type == LayoutType.Byte4E)
                         {
@@ -318,10 +321,10 @@ namespace SoulsFormats
                             UVs.Add(new Vector3(br.ReadInt16(), br.ReadInt16(), 0) / uvFactor);
                             UVs.Add(new Vector3(br.ReadInt16(), br.ReadInt16(), 0) / uvFactor);
                         }
-                        else if (member.Type == LayoutType.Short4toFloat4B)
+                        else if (member.Type == LayoutType.Half4)
                         {
-                            UVs.Add(new Vector3(br.ReadInt16(), br.ReadInt16(), 0) / uvFactor);
-                            UVs.Add(new Vector3(br.ReadInt16(), br.ReadInt16(), 0) / uvFactor);
+                            UVs.Add(new Vector3((float)br.ReadHalf(), (float)br.ReadHalf(), 0));
+                            UVs.Add(new Vector3((float)br.ReadHalf(), (float)br.ReadHalf(), 0));
                         }
                         else
                             throw new NotImplementedException($"Read not implemented for {member.Type} {member.Semantic}.");
@@ -464,6 +467,12 @@ namespace SoulsFormats
             {
                 foreach (LayoutMember member in layout)
                 {
+                    //Speedtree
+                    if (member.SpecialModifier == -32768)
+                    {
+                        continue;
+                    }
+
                     if (member.Semantic == LayoutSemantic.Position)
                     {
                         if (member.Type == LayoutType.Float3)
@@ -575,10 +584,10 @@ namespace SoulsFormats
                             WriteShortNormXYZ(bw, Normal);
                             bw.WriteInt16((short)NormalW);
                         }
-                        else if (member.Type == LayoutType.Short4toFloat4B)
+                        else if (member.Type == LayoutType.Half4)
                         {
-                            WriteUShortNormXYZ(bw, Normal);
-                            bw.WriteInt16((short)NormalW);
+                            WriteFloat16NormXYZ(bw, Normal);
+                            bw.WriteHalf((Half)(float)NormalW);
                         }
                         else if (member.Type == LayoutType.Byte4E)
                         {
@@ -657,14 +666,14 @@ namespace SoulsFormats
                             bw.WriteInt16((short)Math.Round(uv.X));
                             bw.WriteInt16((short)Math.Round(uv.Y));
                         }
-                        else if (member.Type == LayoutType.Short4toFloat4B)
+                        else if (member.Type == LayoutType.Half4)
                         {
-                            bw.WriteInt16((short)Math.Round(uv.X));
-                            bw.WriteInt16((short)Math.Round(uv.Y));
+                            bw.WriteHalf((Half)uv.X);
+                            bw.WriteHalf((Half)uv.Y);
 
                             uv = uvQueue.Dequeue() * uvFactor;
-                            bw.WriteInt16((short)Math.Round(uv.X));
-                            bw.WriteInt16((short)Math.Round(uv.Y));
+                            bw.WriteHalf((Half)uv.X);
+                            bw.WriteHalf((Half)uv.Y);
                         }
                         else
                             throw new NotImplementedException($"Write not implemented for {member.Type} {member.Semantic}.");
@@ -809,6 +818,16 @@ namespace SoulsFormats
                 WriteShortNormAC6(bw, value.Y);
                 WriteShortNormAC6(bw, value.Z);
             }
+            private static void WriteFloat16Norm(BinaryWriterEx bw, float value)
+                => bw.WriteHalf((Half)value);
+
+            private static void WriteFloat16NormXYZ(BinaryWriterEx bw, Vector3 value)
+            {
+                WriteFloat16Norm(bw, value.X);
+                WriteFloat16Norm(bw, value.Y);
+                WriteFloat16Norm(bw, value.Z);
+            }
+
             #endregion
         }
     }

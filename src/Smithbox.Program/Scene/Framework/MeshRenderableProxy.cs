@@ -251,60 +251,6 @@ public class MeshRenderableProxy : RenderableProxy, IMeshProviderEventListener
                 needsPlaceholder = false;
             }
         }
-
-        if (_placeholderType != ModelMarkerType.None)
-        {
-            // Speed Tree asset
-            var speedTreeType = RenderableHelper.IsSpeedTreeAsset(_meshProvider);
-            if (speedTreeType != RenderableHelper.SpeedTreeType.None)
-            {
-                needsPlaceholder = true;
-                if (speedTreeType == RenderableHelper.SpeedTreeType.Tree)
-                    useTreePlaceholder = true;
-                else
-                    useBushPlaceholder = true;
-            }
-
-            if (needsPlaceholder)
-            {
-                _placeholderProxy =
-                    RenderableHelper.GetModelMarkerProxy(_renderablesSet, _placeholderType);
-
-                if(useTreePlaceholder)
-                {
-                    _placeholderProxy =
-                    RenderableHelper.GetTreeProxy(_renderablesSet);
-                    _placeholderProxy.DrawFilter = RenderFilter.SpeedTree;
-                }
-                else if (useBushPlaceholder)
-                {
-                    _placeholderProxy =
-                        RenderableHelper.GetBushProxy(_renderablesSet);
-                    _placeholderProxy.DrawFilter = RenderFilter.SpeedTree;
-                }
-                else
-                {
-                    _placeholderProxy.DrawFilter = _drawfilter;
-                }
-
-                _placeholderProxy.World = World;
-                _placeholderProxy.Visible = Visible;
-                _placeholderProxy.DrawGroups = _drawgroups;
-                if (_selectable != null)
-                {
-                    _selectable.TryGetTarget(out ISelectable? sel);
-                    if (sel != null)
-                    {
-                        _placeholderProxy.SetSelectable(sel);
-                    }
-                }
-
-                if (_registered)
-                {
-                    _placeholderProxy.Register();
-                }
-            }
-        }
     }
 
     public void OnProviderUnavailable()

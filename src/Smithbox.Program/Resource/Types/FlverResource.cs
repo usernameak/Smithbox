@@ -503,7 +503,12 @@ public class FlverResource : IResource, IDisposable
             ProcessMaterialTexture(dest, matparam.Type, matparam.Path, mat.MTD, out blend, out hasNormal2, out hasSpec2, out hasShininess2, out blendMask);
         }
 
-        if (blendMask)
+        if (IsSpeedtree)
+        {
+            dest.ShaderName = @"FlverShader\FlverShader_SpeedTreeTrunk";
+            dest.LayoutType = MeshLayoutType.LayoutSpeedTreeTrunk;
+        }
+        else if (blendMask)
         {
             dest.ShaderName = @"FlverShader\FlverShader_blendmask";
             dest.LayoutType = MeshLayoutType.LayoutUV2;
@@ -573,7 +578,12 @@ public class FlverResource : IResource, IDisposable
             ProcessMaterialTexture(dest, ttype, tpath, mtd, out blend, out hasNormal2, out hasSpec2, out hasShininess2, out blendMask);
         }
 
-        if (blendMask)
+        if (IsSpeedtree)
+        {
+            dest.ShaderName = @"FlverShader\FlverShader_SpeedTreeTrunk";
+            dest.LayoutType = MeshLayoutType.LayoutSpeedTreeTrunk;
+        }
+        else if (blendMask)
         {
             dest.ShaderName = @"FlverShader\FlverShader_blendmask";
             dest.LayoutType = MeshLayoutType.LayoutUV2;
@@ -623,6 +633,11 @@ public class FlverResource : IResource, IDisposable
             *dest = br.ReadVector3();
             br.AssertSingle(0);
         }
+        else if (type == FLVER.LayoutType.Half4)
+        {
+            *dest = new Vector3((float) br.ReadHalf(), (float) br.ReadHalf(), (float) br.ReadHalf());
+            br.ReadHalf();
+        }
         else
         {
             throw new NotImplementedException($"Read not implemented for {type} vertex.");
@@ -636,6 +651,15 @@ public class FlverResource : IResource, IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private unsafe void FillNormalSNorm8Zero(sbyte* dest)
+    {
+        dest[0] = 0;
+        dest[1] = 0;
+        dest[2] = 0;
+        dest[3] = 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private unsafe void FillNormalSNorm8(sbyte* dest, ref FLVER.Vertex v)
     {
         Vector3 n = Vector3.Normalize(new Vector3(v.Normal.X, v.Normal.Y, v.Normal.Z));
@@ -643,6 +667,16 @@ public class FlverResource : IResource, IDisposable
         dest[1] = (sbyte)(n.Y * 127.0f);
         dest[2] = (sbyte)(n.Z * 127.0f);
         dest[3] = (sbyte)v.NormalW;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private unsafe void FillNormalSNorm8(sbyte* dest, Vector3 n_in, int normalW)
+    {
+        Vector3 n = Vector3.Normalize(new Vector3(n_in.X, n_in.Y, n_in.Z));
+        dest[0] = (sbyte)(n.X * 127.0f);
+        dest[1] = (sbyte)(n.Y * 127.0f);
+        dest[2] = (sbyte)(n.Z * 127.0f);
+        dest[3] = (sbyte)normalW;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -688,7 +722,7 @@ public class FlverResource : IResource, IDisposable
             *n = FLVER.Vertex.ReadShortNormXYZ(br);
             nw = br.ReadInt16();
         }
-        else if (type == FLVER.LayoutType.Short4toFloat4B)
+        else if (type == FLVER.LayoutType.Half4)
         {
             //Normal = ReadUShortNormXYZ(br);
             *n = FLVER.Vertex.ReadFloat16NormXYZ(br);
@@ -776,11 +810,11 @@ public class FlverResource : IResource, IDisposable
             v2 = new Vector3(br.ReadInt16(), br.ReadInt16(), 0) / uvFactor;
             hasv2 = allowv2;
         }
-        else if (type == FLVER.LayoutType.Short4toFloat4B)
+        else if (type == FLVER.LayoutType.Half4)
         {
             //AddUV(new Vector3(br.ReadInt16(), br.ReadInt16(), br.ReadInt16()) / uvFactor);
             v = FLVER.Vertex.ReadFloat16NormXYZ(br);
-            br.AssertInt16(0);
+            br.ReadHalf();
         }
         else
         {
@@ -823,6 +857,23 @@ public class FlverResource : IResource, IDisposable
         destBitan[3] = (sbyte)(tan.W * 127.0f);
 
         Vector3 bn = Vector3.Cross(Vector3.Normalize(v.Normal), Vector3.Normalize(new Vector3(t.X, t.Y, t.Z))) *
+                     tan.W;
+        destBinorm[0] = (sbyte)(bn.X * 127.0f);
+        destBinorm[1] = (sbyte)(bn.Y * 127.0f);
+        destBinorm[2] = (sbyte)(bn.Z * 127.0f);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private unsafe void FillBinormalBitangentSNorm8(sbyte* destBinorm, sbyte* destBitan, Vector4 tan, Vector3 normal,
+        byte index)
+    {
+        Vector3 t = Vector3.Normalize(new Vector3(tan.X, tan.Y, tan.Z));
+        destBitan[0] = (sbyte)(t.X * 127.0f);
+        destBitan[1] = (sbyte)(t.Y * 127.0f);
+        destBitan[2] = (sbyte)(t.Z * 127.0f);
+        destBitan[3] = (sbyte)(tan.W * 127.0f);
+
+        Vector3 bn = Vector3.Cross(Vector3.Normalize(normal), Vector3.Normalize(new Vector3(t.X, t.Y, t.Z))) *
                      tan.W;
         destBinorm[0] = (sbyte)(bn.X * 127.0f);
         destBinorm[1] = (sbyte)(bn.Y * 127.0f);
@@ -912,7 +963,7 @@ public class FlverResource : IResource, IDisposable
             case FLVER.LayoutType.UVPair:
             case FLVER.LayoutType.ShortBoneIndices:
             case FLVER.LayoutType.Short4toFloat4A:
-            case FLVER.LayoutType.Short4toFloat4B:
+            case FLVER.LayoutType.Half4:
                 br.ReadUInt64();
                 break;
 
@@ -1014,6 +1065,78 @@ public class FlverResource : IResource, IDisposable
                 FillNormalSNorm8((*v).Normal, ref vert);
             }
         }
+    }
+    private unsafe void FillVerticesSpeedTreeTrunk(BinaryReaderEx br, ref FlverVertexBuffer buffer,
+        Span<FlverBufferLayoutMember> layouts, Span<Vector3> pickingVerts, nint vertBuffer, int[] meshBoneIndices, bool useNormalWTransform, float uvFactor)
+    {
+        br.StepIn(buffer.bufferOffset);
+
+        var pverts = (FlverLayoutSpeedTreeTrunk*)vertBuffer;
+
+        for (var i = 0; i < buffer.vertexCount; i++)
+        {
+            FlverLayoutSpeedTreeTrunk* v = &pverts[i];
+            Vector3 n = Vector3.UnitX;
+
+            var posfilled = false;
+            foreach (FlverBufferLayoutMember l in layouts)
+            {
+                // ER meme
+                if (l.unk00 == -2147483647)
+                {
+                    continue;
+                }
+
+                if (l.semantic == FLVER.LayoutSemantic.UV && l.index == 2)
+                {
+                    // Edge compression is not supported here
+                    if (l.type == LayoutType.EdgeCompressed)
+                    {
+                        continue;
+                    }
+
+                    FillVertex(&(*v).Position, br, l.type);
+                    posfilled = true;
+                }
+                else if (l.semantic == FLVER.LayoutSemantic.UV && l.index == 2)
+                {
+                    // Edge compression is not supported here
+                    if (l.type == LayoutType.EdgeCompressed)
+                    {
+                        continue;
+                    }
+
+                    FillVertex(&(*v).Position, br, l.type);
+                    posfilled = true;
+                }
+                else if (l.semantic == FLVER.LayoutSemantic.UV && l.index == 5)
+                {
+                    FillNormalSNorm8((*v).Normal, br, l.type, &n, meshBoneIndices, useNormalWTransform);
+                }
+                else if (l.semantic == FLVER.LayoutSemantic.UV && l.index == 6)
+                {
+                    FillBinormalBitangentSNorm8((*v).Binormal, (*v).Bitangent, &n, br, l.type);
+                }
+                else if (l.semantic == FLVER.LayoutSemantic.UV && l.index == 3)
+                {
+                    bool hasv2;
+                    FillUVShort((*v).Uv1, br, l.type, uvFactor, false, out hasv2);
+                }
+                else
+                {
+                    EatVertex(br, l.type);
+                }
+            }
+
+            if (!posfilled)
+            {
+                (*v).Position = new Vector3(0, 0, 0);
+            }
+
+            pickingVerts[i] = (*v).Position;
+        }
+
+        br.StepOut();
     }
 
     private unsafe void FillVerticesStandard(BinaryReaderEx br, ref FlverVertexBuffer buffer,
@@ -1262,6 +1385,38 @@ public class FlverResource : IResource, IDisposable
         }
     }
 
+    private unsafe void FillVerticesSpeedTreeTrunk(FLVER2.Mesh mesh, Span<Vector3> pickingVerts, nint vertBuffer)
+    {
+        Span<FlverLayoutSpeedTreeTrunk> verts = new(vertBuffer.ToPointer(), mesh.Vertices.Count);
+        fixed (FlverLayoutSpeedTreeTrunk* pverts = verts)
+        {
+            for (var i = 0; i < mesh.Vertices.Count; i++)
+            {
+                FLVER.Vertex vert = mesh.Vertices[i];
+
+                verts[i] = new FlverLayoutSpeedTreeTrunk();
+                pickingVerts[i] = new Vector3(vert.UVs[0].X, vert.UVs[0].Y, vert.UVs[1].X);
+                FlverLayoutSpeedTreeTrunk* v = &pverts[i];
+                v->Position = new Vector3(vert.UVs[0].X, vert.UVs[0].Y, vert.UVs[1].X);
+
+                FillUVShort((*v).Uv1, ref vert, 2);
+
+                if (vert.UVs.Count >= 14)
+                {
+                    Vector4 tan = new(vert.UVs[12].X * 2.0f - 1.0f, vert.UVs[12].Y * 2.0f - 1.0f, vert.UVs[13].X * 2.0f - 1.0f, 0.0f);
+                    Vector3 norm = new(vert.UVs[10].X * 2.0f - 1.0f, vert.UVs[10].Y * 2.0f - 1.0f, vert.UVs[11].X * 2.0f - 1.0f);
+                    FillNormalSNorm8((*v).Normal, norm, 0);
+                    FillBinormalBitangentSNorm8((*v).Binormal, (*v).Bitangent, tan, norm, 0);
+                }
+                else
+                {
+                    FillNormalSNorm8Zero((*v).Normal);
+                    FillBinormalBitangentSNorm8Zero((*v).Binormal, (*v).Bitangent);
+                }
+            }
+        }
+    }
+
     private unsafe void ProcessMesh(FLVER0.Mesh mesh, FlverSubmesh dest)
     {
         var curProject = ResourceManager.BaseEditor.ProjectManager.SelectedProject;
@@ -1478,6 +1633,10 @@ public class FlverResource : IResource, IDisposable
         else if (dest.Material.LayoutType == MeshLayoutType.LayoutUV2)
         {
             FillVerticesUV2(mesh, pvhandle, meshVertices);
+        }
+        else if (dest.Material.LayoutType == MeshLayoutType.LayoutSpeedTreeTrunk)
+        {
+            FillVerticesSpeedTreeTrunk(mesh, pvhandle, meshVertices);
         }
         else
         {
@@ -1737,6 +1896,10 @@ public class FlverResource : IResource, IDisposable
             else if (dest.Material.LayoutType == MeshLayoutType.LayoutUV2)
             {
                 FillVerticesUV2(br, ref vb, layoutmembers, pvhandle, meshVertices, meshBoneIndices, dest.UseNormalWBoneTransform, version >= 0x2000F ? 2048 : 1024);
+            }
+            else if (dest.Material.LayoutType == MeshLayoutType.LayoutSpeedTreeTrunk)
+            {
+                FillVerticesSpeedTreeTrunk(br, ref vb, layoutmembers, pvhandle, meshVertices, meshBoneIndices, dest.UseNormalWBoneTransform, version >= 0x2000F ? 2048 : 1024);
             }
             else
             {
